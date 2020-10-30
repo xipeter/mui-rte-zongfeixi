@@ -92,6 +92,7 @@ export type TMUIRichTextEditorProps = {
     keyCommands?: TKeyCommand[]
     maxLength?: number
     autocomplete?: TAutocomplete
+    saveOnEnter?: boolean
     onSave?: (data: string) => void
     onChange?: (state: EditorState) => void
     onFocus?: () => void
@@ -743,6 +744,10 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                 }
                 return "handled"
             }
+            if ("mui-save" === command) {
+                handleSave()
+                return "handled"
+            }
             if (props.keyCommands) {
                 const keyCommand = props.keyCommands.find(comm => comm.name === command)
                 if (keyCommand) {
@@ -1124,6 +1129,9 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             if (autocompleteEvent) {
                 return autocompleteEvent
             }
+        }
+        if (props.saveOnEnter && "Enter" === e.key && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+            return "mui-save"
         }
         const keyBinding = getDefaultKeyBinding(e)
         updateSearchTermForKeyBinding(keyBinding)
