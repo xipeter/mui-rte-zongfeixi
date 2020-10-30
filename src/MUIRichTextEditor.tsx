@@ -1,5 +1,7 @@
-import React, { FunctionComponent, useEffect, useState, useRef,
-    forwardRef, useImperativeHandle, RefForwardingComponent, SyntheticEvent } from 'react'
+import React, {
+    FunctionComponent, useEffect, useState, useRef,
+    forwardRef, useImperativeHandle, RefForwardingComponent, SyntheticEvent
+} from 'react'
 import Immutable from 'immutable'
 import classNames from 'classnames'
 import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles'
@@ -141,6 +143,66 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
         fontSize: "inherit"
     },
     editor: {
+        "& li.public-DraftStyleDefault-orderedListItem": {
+            listStyleType: "none",
+            position: "relative",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem:before": {
+            left: "-34px",
+            position: "absolute",
+            textAlign: "right",
+            width: "30px",
+        },
+        "& li.public-DraftStyleDefault-depth0": {
+            marginLeft: 0,
+        },
+        "& li.public-DraftStyleDefault-depth0.public-DraftStyleDefault-reset": {
+            counterReset: "ol0",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth0:before": {
+            content: "counter(ol0) '.'",
+            counterIncrement: "ol0",
+        },
+        "& li.public-DraftStyleDefault-depth1": {
+            marginLeft: "16px",
+        },
+        "& li.public-DraftStyleDefault-depth1.public-DraftStyleDefault-reset": {
+            counterReset: "ol1",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth1:before": {
+            content: "counter(ol1) '.'",
+            counterIncrement: "ol1",
+        },
+        "& li.public-DraftStyleDefault-depth2": {
+            marginLeft: "32px",
+        },
+        "& li.public-DraftStyleDefault-depth2.public-DraftStyleDefault-reset": {
+            counterReset: "ol2",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth2:before": {
+            content: "counter(ol2) '.'",
+            counterIncrement: "ol2",
+        },
+        "& li.public-DraftStyleDefault-depth3": {
+            marginLeft: "48px",
+        },
+        "& li.public-DraftStyleDefault-depth3.public-DraftStyleDefault-reset": {
+            counterReset: "ol3",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth3:before": {
+            content: "counter(ol3) '.'",
+            counterIncrement: "ol3",
+        },
+        "& li.public-DraftStyleDefault-depth4": {
+            marginLeft: "64px",
+        },
+        "& li.public-DraftStyleDefault-depth4.public-DraftStyleDefault-reset": {
+            counterReset: "ol4",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth4:before": {
+            content: "counter(ol4) '.'",
+            counterIncrement: "ol4",
+        }
     },
     editorContainer: {
         margin: spacing(1, 0, 0, 0),
@@ -800,7 +862,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         }
     }
 
-    const handlePastedText = (text: string, _html: string|undefined, editorState: EditorState): DraftHandleValue => {
+    const handlePastedText = (text: string, _html: string | undefined, editorState: EditorState): DraftHandleValue => {
         return isMaxLengthHandled(editorState, text.length)
     }
 
@@ -814,9 +876,8 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const handleOnTab = (ev: React.KeyboardEvent<{}>) => {
-        const blockType = RichUtils.getCurrentBlockType(editorState);
+        // draftjs doesn't work with max depth more then 4
         let newEditorState = RichUtils.onTab(ev, editorState, 4)
-        //newEditorState = RichUtils.toggleBlockType(newEditorState, blockType)
         handleChange(newEditorState);
     }
 
