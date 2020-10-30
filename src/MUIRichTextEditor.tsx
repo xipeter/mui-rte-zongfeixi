@@ -180,7 +180,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
             counterReset: "ol2",
         },
         "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth2:before": {
-            content: "counter(ol2) '. '",
+            content: "counter(ol2) '.'",
             counterIncrement: "ol2",
         },
         "& li.public-DraftStyleDefault-depth3": {
@@ -190,7 +190,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
             counterReset: "ol3",
         },
         "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth3:before": {
-            content: "counter(ol3) '. '",
+            content: "counter(ol3) '.'",
             counterIncrement: "ol3",
         },
         "& li.public-DraftStyleDefault-depth4": {
@@ -200,7 +200,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
             counterReset: "ol4",
         },
         "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth4:before": {
-            content: "counter(ol4) '. '",
+            content: "counter(ol4) '.'",
             counterIncrement: "ol4",
         }
     },
