@@ -50,6 +50,7 @@ export type TAsyncAtomicBlockResponse = {
 export type TMUIRichTextEditorRef = {
     focus: () => void
     save: () => void
+    setLink: (urlKey: string, url: string) => void
     /**
      * @deprecated Use `insertAtomicBlockSync` instead.
      */
@@ -352,6 +353,9 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         },
         save: () => {
             handleSave()
+        },
+        setLink: (urlKey: string, url: string) => {
+            confirmLink(urlKey, url);
         },
         insertAtomicBlock: (name: string, data: any) => {
             handleInsertAtomicBlockSync(name, data)
@@ -783,6 +787,9 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                         }
                     }
                 }
+                if (control.onPopup) {
+                    control.onPopup(editorState, control.name, document.getElementById(id))
+                }
                 break
             }
         }
@@ -833,7 +840,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             confirmMedia(...args)
             return
         }
-        confirmLink(...args)
+        confirmLink(state.urlKey, args[0])
     }
 
     const handleToolbarClick = (style: string, type: string, id: string, inlineMode?: boolean) => {
@@ -902,8 +909,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         setEditorState(RichUtils.toggleLink(editorState, selection, null))
     }
 
-    const confirmLink = (url?: string) => {
-        const { urlKey } = state
+    const confirmLink = (urlKey?: string, url?: string) => {
         if (!url) {
             if (urlKey) {
                 removeLink()
