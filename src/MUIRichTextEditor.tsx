@@ -35,6 +35,7 @@ export type TAutocompleteStrategy = {
     minSearchChars?: number
     maxWidth?: number
     maxHeight?: number
+    matchAutocompleteKey?: (entry: string, key: string) => boolean;
     handleAutoComplete?: (editorState: EditorState, selectionState: SelectionState, value: any) => EditorState
 }
 
@@ -581,9 +582,17 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         setSelectedIndex(0)
     }
 
+    const matchKey: (s: string, k: string) => boolean =
+        autocompleteRef.current?.matchAutocompleteKey ||
+        ((s, k) => k.includes(s))
+
+    const matchAutocompleteItem = (item: TAutocompleteItem): boolean => {
+        return item.keys.filter(key => matchKey(searchTerm, key)).length > 0
+    }
+
     const getAutocompleteItems = (): TAutocompleteItem[] => {
         return autocompleteRef.current!.items
-            .filter(item => (item.keys.filter(key => key.includes(searchTerm)).length > 0))
+            .filter(item => matchAutocompleteItem(item))
             .splice(0, autocompleteLimit)
     }
 
@@ -593,7 +602,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
 
     const handleBeforeInput = (chars: string): DraftHandleValue => {
         if (chars === " " && autocompleteRef.current?.items?.length == 1) {
-            if (0 <= autocompleteRef.current?.items[0].keys.findIndex(k => k === searchTerm)) {
+            if (matchAutocompleteItem(autocompleteRef.current?.items[0])) {
                 handleAutocompleteSelected()
                 return "handled"
             } else {
