@@ -582,11 +582,11 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         setSelectedIndex(0)
     }
 
-    const matchAutocompleteItem = (item: TAutocompleteItem): boolean => {
-        const matchKey: (s: string, k: string) => boolean =
-            autocompleteRef.current?.matchAutocompleteKey ||
-            ((s, k) => k.includes(s))
+    const matchKey: (s: string, k: string) => boolean =
+        autocompleteRef.current?.matchAutocompleteKey ||
+        ((s, k) => k.includes(s))
 
+    const matchAutocompleteItem = (item: TAutocompleteItem): boolean => {
         return item.keys.filter(key => matchKey(searchTerm, key)).length > 0
     }
 
