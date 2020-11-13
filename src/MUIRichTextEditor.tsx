@@ -609,7 +609,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             } else {
                 setShowAutocompletePopup(false);
             }
-        } else {
+        } else if (isAfterWhitespace()) {
             const strategy = findAutocompleteStrategy(chars)
             if (strategy) {
                 autocompleteRef.current = strategy
@@ -617,6 +617,21 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             }
         }
         return isMaxLengthHandled(editorState, 1)
+    }
+    const isAfterWhitespace = () => {
+        const selectionState = editorStateRef.current?.getSelection();
+        if (!selectionState) {
+            return false;
+        }
+        const anchorKey = selectionState.getAnchorKey();
+        const currentContent = editorState.getCurrentContent();
+        const currentContentBlock = currentContent.getBlockForKey(anchorKey);
+        const end = selectionState.getEndOffset();
+        if (end == 0) {
+            return true;
+        }
+        const lastSymbol = currentContentBlock.getText().slice(end - 1, end);
+        return /\s/.test(lastSymbol);
     }
 
     const isSyntheticEventTriggeredByTab = (event: SyntheticEvent): boolean => {
