@@ -88,6 +88,7 @@ export type TMUIRichTextEditorProps = {
     decorators?: TDecorator[]
     toolbar?: boolean
     toolbarButtonSize?: TToolbarButtonSize
+    lineHeight?: number
     inlineToolbar?: boolean
     inlineToolbarControls?: Array<TToolbarControl>
     draftEditorProps?: TDraftEditorProps
@@ -269,7 +270,7 @@ const defaultAutocompleteMinSearchCharCount = 2
 const defaultAutocompleteMaxWidth = 200;
 const defaultAutocompleteMaxHeight = 200;
 
-const lineHeight = 26
+const defaultLineHeight = 26;
 const defaultInlineToolbarControls = ["bold", "italic", "underline", "clear"]
 
 const findLinkEntities = (contentBlock: any, callback: any, contentState: any) => {
@@ -331,6 +332,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     })
     const [showAutocompletePopup, setShowAutocompletePopup] = useState(false);
 
+    const lineHeight = props.lineHeight ?? defaultLineHeight;
     const containerRef = useRef<HTMLDivElement>(null)
     const editorRef = useRef<Editor>(null)
     const editorId = props.id || "mui-rte"
