@@ -414,7 +414,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }, [state.toolbarPosition])
 
     useEffect(() => {
-        if (searchTerm.length < autocompleteMinSearchCharCount()) {
+        if (searchTerm.length === 0 || searchTerm.length < autocompleteMinSearchCharCount()) {
             setSelectedIndex(0)
         }
     }, [searchTerm])
@@ -610,22 +610,27 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             }
         } else if (autocompleteSelectionStateRef.current) {
             setSearchTerm(searchTerm + chars)
-            if (canShowAutocompletePopup()) {
-                if (!showAutocompletePopup) {
-                    updateAutocompletePosition()
-                }
-                setShowAutocompletePopup(true);
-            } else {
-                setShowAutocompletePopup(false);
-            }
+            updateAutocompletePopup();
         } else if (isAfterWhitespace()) {
             const strategy = findAutocompleteStrategy(chars)
             if (strategy) {
                 autocompleteRef.current = strategy
                 autocompleteSelectionStateRef.current = editorStateRef.current!.getSelection()
+                setSearchTerm("")
+                updateAutocompletePopup();
             }
         }
         return isMaxLengthHandled(editorState, 1)
+    }
+    const updateAutocompletePopup = () => {
+        if (canShowAutocompletePopup()) {
+            if (!showAutocompletePopup) {
+                updateAutocompletePosition()
+            }
+            setShowAutocompletePopup(true);
+        } else {
+            setShowAutocompletePopup(false);
+        }
     }
     const isAfterWhitespace = () => {
         const selectionState = editorStateRef.current?.getSelection();
@@ -1163,6 +1168,10 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         if (props.saveOnEnter && "Enter" === e.key && !e.shiftKey && !e.ctrlKey && !e.altKey) {
             return "mui-save"
         }
+        if ("Tab" === e.key) {
+            handleOnTab(e);
+            return null;
+        }
         const keyBinding = getDefaultKeyBinding(e)
         updateSearchTermForKeyBinding(keyBinding)
 
@@ -1249,7 +1258,6 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                             blockRendererFn={blockRenderer}
                             editorState={editorState}
                             onChange={handleChange}
-                            onTab={handleOnTab}
                             onFocus={handleEditorFocus}
                             readOnly={props.readOnly}
                             handleKeyCommand={handleKeyCommand}
