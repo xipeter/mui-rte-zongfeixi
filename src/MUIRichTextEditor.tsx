@@ -1159,7 +1159,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                 return comm.name
             }
         }
-        if (searchTerm) {
+        if (autocompleteRef.current) {
             const autocompleteEvent = getAutocompleteKeyEvent(e)
             if (autocompleteEvent) {
                 return autocompleteEvent
