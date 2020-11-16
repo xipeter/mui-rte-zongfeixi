@@ -1206,19 +1206,6 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             <div id={`${editorId}-container`} className={classNames(classes.container, {
                 [classes.inheritFontSize]: props.inheritFontSize
             })}>
-                {props.autocomplete && showAutocompletePopup && autocompletePositionRef.current ?
-                    <Autocomplete
-                        editorId={editorId}
-                        classes={{ autocomplete: classes.autocomplete }}
-                        items={getAutocompleteItems()}
-                        top={autocompletePositionRef.current!.top}
-                        bottom={autocompletePositionRef.current!.bottom}
-                        left={autocompletePositionRef.current!.left}
-                        right={autocompletePositionRef.current!.right}
-                        onClick={handleAutocompleteSelected}
-                        selectedIndex={selectedIndex}
-                    />
-                    : null}
                 {props.inlineToolbar && editable && state.toolbarPosition ?
                     <Paper className={classes.inlineToolbar} style={{
                         top: state.toolbarPosition.top,
@@ -1268,6 +1255,19 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                             ref={editorRef}
                             {...props.draftEditorProps}
                         />
+                        {props.autocomplete && showAutocompletePopup && autocompletePositionRef.current ?
+                            <Autocomplete
+                                editorId={editorId}
+                                classes={{ autocomplete: classes.autocomplete }}
+                                items={getAutocompleteItems()}
+                                top={autocompletePositionRef.current!.top}
+                                bottom={autocompletePositionRef.current!.bottom}
+                                left={autocompletePositionRef.current!.left}
+                                right={autocompletePositionRef.current!.right}
+                                onClick={handleAutocompleteSelected}
+                                selectedIndex={selectedIndex}
+                            />
+                            : null}
                     </div>
                 </div>
                 {state.anchorUrlPopover ?
