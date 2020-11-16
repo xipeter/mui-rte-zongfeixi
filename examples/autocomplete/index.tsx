@@ -132,6 +132,7 @@ const Autocomplete = () => {
                     {
                         items: cities,
                         triggerChar: "/",
+                        minSearchChars: 0,
                         matchAutocompleteKey: (s, k) => k.startsWith(s.toLowerCase()),
                     },
                     {
