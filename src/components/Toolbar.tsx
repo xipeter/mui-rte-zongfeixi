@@ -38,6 +38,7 @@ export type TToolbarComponentProps = {
 export type TCustomControl = {
     id?: string
     name: string
+    label: string
     icon?: JSX.Element
     type: TControlType
     component?: FunctionComponent<TToolbarComponentProps>
@@ -65,6 +66,7 @@ type TToolbarProps = {
     editorState: EditorState
     controls?: Array<TToolbarControl>
     customControls?: TCustomControl[]
+    localization?: (label: string) => string
     onClick: (style: string, type: string, id: string, inlineMode?: boolean) => void
     inlineMode?: boolean
     className?: string
@@ -193,6 +195,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
     const [availableControls, setAvailableControls] = useState(props.controls ? [] : STYLE_TYPES)
     const { editorState } = props
     const id = props.inlineMode ? "-inline-toolbar" : "-toolbar"
+    const localization: (label: string) => string = props.localization ?? (l => l);
 
     useEffect(() => {
         if (!props.controls) {
@@ -212,7 +215,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
                     filteredControls.push({
                         id: customControl.id || (customControl.name + "Id"),
                         name: customControl.name,
-                        label: customControl.name,
+                        label: customControl.label,
                         style: customControl.name.toUpperCase(),
                         icon: customControl.icon,
                         component: customControl.component,
@@ -256,7 +259,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
                         editorId={props.id}
                         key={`key-${style.label}`}
                         active={active}
-                        label={style.label}
+                        label={localization(style.label)}
                         onClick={action}
                         style={style.style}
                         type={style.type}
