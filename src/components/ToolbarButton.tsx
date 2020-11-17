@@ -26,6 +26,7 @@ const ToolbarButton: FunctionComponent<IToolbarButtonProps> = (props) => {
     const elemId = editorId + "-" + (props.id || props.label) + "-button" + toolbarId
     const sharedProps = {
         id: elemId,
+        label: props.label,
         onMouseDown: (e: React.MouseEvent) => {
             e.preventDefault()
             if (props.onClick) {
@@ -36,14 +37,16 @@ const ToolbarButton: FunctionComponent<IToolbarButtonProps> = (props) => {
     }
     if (props.icon) {
         return (
-            <Tooltip title={props.label} aria-label={props.label}>
-                <IconButton
-                    {...sharedProps}
-                    color={props.active ? "primary" : "default"}
-                    size={size}
-                >
-                    {props.icon}
-                </IconButton>
+            <Tooltip title={props.label} aria-label={props.label} placement="top" >
+                <span>
+                    <IconButton
+                        {...sharedProps}
+                        color={props.active ? "primary" : "default"}
+                        size={size}
+                    >
+                        {props.icon}
+                    </IconButton>
+                </span>
             </Tooltip >
         )
     }

@@ -30,6 +30,7 @@ export type TToolbarButtonSize = "small" | "medium"
 
 export type TToolbarComponentProps = {
     id: string,
+    label: string,
     onMouseDown: (e: React.MouseEvent) => void,
     active: boolean,
     disabled: boolean
@@ -169,7 +170,7 @@ const STYLE_TYPES: TStyleType[] = [
         type: "block"
     },
     {
-        label: 'Code Block',
+        label: 'Code',
         name: "code",
         style: 'code-block',
         icon: <CodeIcon />,
