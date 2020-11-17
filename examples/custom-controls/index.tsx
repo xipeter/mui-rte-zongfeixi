@@ -23,9 +23,9 @@ const MyBlock = (props: any) => {
 
 const MyCallbackComponent: FunctionComponent<TToolbarComponentProps> = (props) => {
     return (
-        <Chip 
+        <Chip
             id={props.id}
-            avatar={<Avatar>C</Avatar>} 
+            avatar={<Avatar>C</Avatar>}
             onClick={props.onMouseDown}
             label="Callback"
             disabled={props.disabled}
@@ -35,7 +35,7 @@ const MyCallbackComponent: FunctionComponent<TToolbarComponentProps> = (props) =
 
 const ClearComponent: FunctionComponent<TToolbarComponentProps> = (props) => {
     return (
-        <Chip 
+        <Chip
             id={props.id}
             onClick={props.onMouseDown}
             label="Clear all"
@@ -50,7 +50,7 @@ const MyBlockComponent: FunctionComponent<TToolbarComponentProps> = (props) => {
             id={props.id}
             variant="contained"
             onMouseDown={props.onMouseDown}
-            color={props.active ? "primary": "default"}
+            color={props.active ? "primary" : "default"}
             disabled={props.disabled}
         >
             My Block
@@ -60,13 +60,14 @@ const MyBlockComponent: FunctionComponent<TToolbarComponentProps> = (props) => {
 
 const CustomControls = () => {
     return (
-        <MUIRichTextEditor 
+        <MUIRichTextEditor
             label="Type something here..."
             onSave={save}
             controls={["title", "bold", "my-block", "my-style", "clear", "my-callback", "clear-callback", "save"]}
             customControls={[
                 {
                     name: "my-style",
+                    label: "Style",
                     icon: <InvertColorsIcon />,
                     type: "inline",
                     inlineStyle: {
@@ -76,12 +77,14 @@ const CustomControls = () => {
                 },
                 {
                     name: "my-block",
+                    label: "Style",
                     component: MyBlockComponent,
                     type: "block",
                     blockWrapper: <MyBlock />
                 },
                 {
                     name: "my-callback",
+                    label: "Callback",
                     component: MyCallbackComponent,
                     type: "callback",
                     onClick: (_editorState, name, _anchor) => {
@@ -90,6 +93,7 @@ const CustomControls = () => {
                 },
                 {
                     name: "clear-callback",
+                    label: "Clear Callback",
                     component: ClearComponent,
                     type: "callback",
                     onClick: () => {

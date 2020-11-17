@@ -112,6 +112,7 @@ const AutocompleteAtomic = () => {
             customControls={[
                 {
                     name: "my-city",
+                    label: "City",
                     type: "atomic",
                     atomicComponent: CityChip
                 }

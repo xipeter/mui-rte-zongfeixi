@@ -106,8 +106,8 @@ const UploadImagePopover: FunctionComponent<IUploadImagePopoverProps> = (props) 
         >
             <Grid container spacing={1} className={classes.root}>
                 <Grid item xs={10}>
-                    <TextField 
-                        className={classes.textField} 
+                    <TextField
+                        className={classes.textField}
                         disabled
                         value={data.file?.name || ""}
                         placeholder="Click icon to attach image"
@@ -167,7 +167,7 @@ const AsyncImageUpload: FunctionComponent = () => {
 
     return (
         <>
-            <UploadImagePopover 
+            <UploadImagePopover
                 anchor={anchor}
                 onSubmit={(data, insert) => {
                     if (insert && data.file) {
@@ -183,6 +183,7 @@ const AsyncImageUpload: FunctionComponent = () => {
                 customControls={[
                     {
                         name: "upload-image",
+                        label: "Upload Image",
                         icon: <BackupIcon />,
                         type: "callback",
                         onClick: (_editorState, _name, anchor) => {

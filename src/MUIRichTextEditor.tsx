@@ -91,6 +91,7 @@ export type TMUIRichTextEditorProps = {
     lineHeight?: number
     inlineToolbar?: boolean
     inlineToolbarControls?: Array<TToolbarControl>
+    localization?: (label: string) => string
     draftEditorProps?: TDraftEditorProps
     keyCommands?: TKeyCommand[]
     maxLength?: number
@@ -1235,6 +1236,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                             controls={inlineToolbarControls}
                             customControls={customControls}
                             inlineMode={true}
+                            localization={props.localization}
                         />
                     </Paper>
                     : null}
@@ -1248,6 +1250,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                         className={classes.toolbar}
                         disabled={!editable}
                         size={props.toolbarButtonSize}
+                        localization={props.localization}
                     />
                     : null}
                 {placeholder}

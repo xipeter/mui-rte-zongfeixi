@@ -8,7 +8,7 @@ const save = (data: string) => {
 
 const CustomInlineToolbar = () => {
     return (
-        <MUIRichTextEditor 
+        <MUIRichTextEditor
             label="Try selecting some text to show the inline toolbar..."
             inlineToolbar={true}
             inlineToolbarControls={["bold", "italic", "my-style", "link"]}
@@ -16,6 +16,7 @@ const CustomInlineToolbar = () => {
             customControls={[
                 {
                     name: "my-style",
+                    label: "Style",
                     icon: <InvertColorsIcon />,
                     type: "inline",
                     inlineStyle: {
