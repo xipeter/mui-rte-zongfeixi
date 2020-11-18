@@ -96,6 +96,7 @@ export type TMUIRichTextEditorProps = {
     draftEditorProps?: TDraftEditorProps
     keyCommands?: TKeyCommand[]
     maxLength?: number
+    listMaxDepth?: number
     autocomplete?: TAutocomplete
     saveOnEnter?: boolean
     onSave?: (data: string) => void
@@ -932,7 +933,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
 
     const handleOnTab = (ev: React.KeyboardEvent<{}>) => {
         // draftjs doesn't work with max depth more then 4
-        let newEditorState = RichUtils.onTab(ev, editorState, 4)
+        let newEditorState = RichUtils.onTab(ev, editorState, props.listMaxDepth ?? 4)
         handleChange(newEditorState);
     }
 
