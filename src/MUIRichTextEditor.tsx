@@ -52,6 +52,7 @@ export type TMUIRichTextEditorRef = {
     focus: () => void
     save: () => void
     setLink: (urlKey: string, url: string) => void
+    isSelectionEmpty: () => boolean
     /**
      * @deprecated Use `insertAtomicBlockSync` instead.
      */
@@ -361,6 +362,14 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         },
         setLink: (urlKey: string, url: string) => {
             confirmLink(urlKey, url);
+        },
+        isSelectionEmpty: () => {
+            const selection = editorStateRef.current?.getSelection();
+            if (null == selection) {
+                return true;
+            }
+            return selection.getStartKey() === selection.getEndKey()
+                && selection.getStartOffset() === selection.getEndOffset();
         },
         insertAtomicBlock: (name: string, data: any) => {
             handleInsertAtomicBlockSync(name, data)
