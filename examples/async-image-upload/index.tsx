@@ -1,5 +1,5 @@
 import React, { useRef, useState, FunctionComponent, useEffect } from 'react'
-import MUIRichTextEditor, { TMUIRichTextEditorRef, TAsyncAtomicBlockResponse } from '../..'
+import MUIRichTextEditor from '../..'
 import Grid from '@mui/material/Grid'
 import { makeStyles } from '@mui/styles'
 import Popover from '@mui/material/Popover'
@@ -10,6 +10,7 @@ import BackupIcon from '@mui/icons-material/Backup'
 import DoneIcon from '@mui/icons-material/Done'
 import CloseIcon from '@mui/icons-material/Close'
 import AttachFileIcon from '@mui/icons-material/AttachFile'
+import { TAsyncAtomicBlockResponse, TMUIRichTextEditorRef } from '../../src/MUIRichTextEditor'
 
 interface IUploadImagePopoverProps {
     anchor: TAnchor

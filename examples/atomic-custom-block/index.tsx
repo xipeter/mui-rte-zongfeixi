@@ -1,5 +1,5 @@
 import React, { useRef, useState, FunctionComponent, useEffect } from 'react'
-import MUIRichTextEditor, { TMUIRichTextEditorRef } from '../..'
+import MUIRichTextEditor from '../..'
 import {
     Card, CardHeader, Avatar, CardMedia, CardContent,
     Typography, IconButton, CardActions, Grid
@@ -13,6 +13,7 @@ import ShareIcon from '@mui/icons-material/Share'
 import FavoriteIcon from '@mui/icons-material/Favorite'
 import DoneIcon from '@mui/icons-material/Done'
 import CloseIcon from '@mui/icons-material/Close'
+import { TMUIRichTextEditorRef } from '../../src/MUIRichTextEditor'
 
 type TMyCardData = {
     title?: string
@@ -236,11 +237,13 @@ const AtomicCustomBlock: FunctionComponent = () => {
                 customControls={[
                     {
                         name: "my-card",
+                        label: "Card",
                         type: "atomic",
                         atomicComponent: MyCard
                     },
                     {
                         name: "add-card",
+                        label: "Add Card",
                         icon: <WebAssetIcon />,
                         type: "callback",
                         onClick: (_editorState, _name, anchor) => {

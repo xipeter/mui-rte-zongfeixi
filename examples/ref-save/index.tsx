@@ -1,5 +1,6 @@
 import React, { FunctionComponent, useRef } from 'react'
-import MUIRichTextEditor, { TMUIRichTextEditorRef } from '../../'
+import MUIRichTextEditor from '../../'
+import { TMUIRichTextEditorRef } from '../../src/MUIRichTextEditor'
 
 const RefSave: FunctionComponent = () => {
 

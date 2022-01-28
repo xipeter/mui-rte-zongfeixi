@@ -1,5 +1,5 @@
 import React, { useRef, useState, FunctionComponent, useEffect } from 'react'
-import MUIRichTextEditor, { TMUIRichTextEditorRef, TAsyncAtomicBlockResponse } from '../..'
+import MUIRichTextEditor from '../..'
 import { makeStyles } from '@mui/styles'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -11,6 +11,7 @@ import Button from '@mui/material/Button'
 import UpdateIcon from '@mui/icons-material/Update'
 import DoneIcon from '@mui/icons-material/Done'
 import CloseIcon from '@mui/icons-material/Close'
+import { TAsyncAtomicBlockResponse, TMUIRichTextEditorRef } from '../../src/MUIRichTextEditor'
 
 type TMyCardData = {
     searchTerm?: string

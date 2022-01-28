@@ -128,7 +128,7 @@ type AutocompleteTPosition = {
     right: number | 'unset'
 }
 
-interface TMUIRichTextEditorStyles {
+export interface TMUIRichTextEditorStyles {
     overrides?: {
         MUIRichTextEditor?: {
             root?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,

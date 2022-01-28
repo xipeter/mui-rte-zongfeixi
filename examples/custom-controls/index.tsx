@@ -1,8 +1,9 @@
 import React, { FunctionComponent } from 'react'
 import { Chip, Avatar, Button } from '@mui/material'
 import InvertColorsIcon from '@mui/icons-material/InvertColors'
-import MUIRichTextEditor, { TToolbarComponentProps } from '../../'
+import MUIRichTextEditor from '../../'
 import { EditorState } from 'draft-js'
+import { TToolbarComponentProps } from '../../src/components/Toolbar'
 
 const save = (data: string) => {
     console.log(data)
@@ -66,6 +67,7 @@ const CustomControls = () => {
             customControls={[
                 {
                     name: "my-style",
+                    label: "Style",
                     icon: <InvertColorsIcon />,
                     type: "inline",
                     inlineStyle: {
@@ -75,12 +77,14 @@ const CustomControls = () => {
                 },
                 {
                     name: "my-block",
+                    label: "Block",
                     component: MyBlockComponent,
                     type: "block",
                     blockWrapper: <MyBlock />
                 },
                 {
                     name: "my-callback",
+                    label: "Callback",
                     component: MyCallbackComponent,
                     type: "callback",
                     onClick: (_editorState, name, _anchor) => {
@@ -89,6 +93,7 @@ const CustomControls = () => {
                 },
                 {
                     name: "clear-callback",
+                    label: "Clear Callback",
                     component: ClearComponent,
                     type: "callback",
                     onClick: () => {

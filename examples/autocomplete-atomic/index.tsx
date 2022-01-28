@@ -1,7 +1,10 @@
-import { makeStyles } from '@material-ui/core'
+import React, { FunctionComponent } from 'react'
 import Avatar from '@mui/material/Avatar'
 import Chip from '@mui/material/Chip'
-import MUIRichTextEditor, { TAutocompleteItem } from '../../'
+import { makeStyles } from '@mui/styles'
+import { EditorState, Modifier, RichUtils, SelectionState } from 'draft-js'
+import MUIRichTextEditor from '../../'
+import { TAutocompleteItem } from '../../src/components/Autocomplete'
 
 
 
