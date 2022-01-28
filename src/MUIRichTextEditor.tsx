@@ -13,6 +13,7 @@ import {
     DraftHandleValue, DraftStyleMap, ContentBlock, DraftDecorator,
     SelectionState, KeyBindingUtil, getDefaultKeyBinding, Modifier, DraftBlockRenderMap
 } from 'draft-js'
+
 import Toolbar, { TToolbarControl, TCustomControl, TToolbarButtonSize } from './components/Toolbar'
 import Link from './components/Link'
 import Media from './components/Media'
@@ -32,6 +33,11 @@ export type TAutocompleteStrategy = {
     items: TAutocompleteItem[]
     insertSpaceAfter?: boolean
     atomicBlockName?: string
+    minSearchChars?: number
+    maxWidth?: number
+    maxHeight?: number
+    matchAutocompleteKey?: (entry: string, key: string) => boolean;
+    handleAutoComplete?: (editorState: EditorState, selectionState: SelectionState, value: any) => EditorState
 }
 
 export type TAutocomplete = {
@@ -46,6 +52,8 @@ export type TAsyncAtomicBlockResponse = {
 export type TMUIRichTextEditorRef = {
     focus: () => void
     save: () => void
+    setLink: (urlKey: string, url: string) => void
+    isSelectionEmpty: () => boolean
     /**
      * @deprecated Use `insertAtomicBlockSync` instead.
      */
@@ -82,12 +90,16 @@ export type TMUIRichTextEditorProps = {
     decorators?: TDecorator[]
     toolbar?: boolean
     toolbarButtonSize?: TToolbarButtonSize
+    lineHeight?: number
     inlineToolbar?: boolean
     inlineToolbarControls?: Array<TToolbarControl>
+    localization?: (label: string) => string
     draftEditorProps?: TDraftEditorProps
     keyCommands?: TKeyCommand[]
     maxLength?: number
+    listMaxDepth?: number
     autocomplete?: TAutocomplete
+    saveOnEnter?: boolean
     onSave?: (data: string) => void
     onChange?: (state: EditorState) => void
     onFocus?: () => void
@@ -109,6 +121,13 @@ type TStateOffset = {
     end: number
 }
 
+type AutocompleteTPosition = {
+    top: number | 'unset'
+    bottom: number | 'unset'
+    left: number | 'unset'
+    right: number | 'unset'
+}
+
 interface TMUIRichTextEditorStyles {
     overrides?: {
         MUIRichTextEditor?: {
@@ -125,7 +144,8 @@ interface TMUIRichTextEditorStyles {
             linkTextField?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
             anchorLink?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
             toolbar?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
-            inlineToolbar?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>
+            inlineToolbar?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            autocomplete?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>
         }
     }
 }
@@ -144,7 +164,68 @@ const styles = (theme: Theme & TMUIRichTextEditorStyles) => createStyles({
     inheritFontSize: theme?.overrides?.MUIRichTextEditor?.inheritFontSize || {
         fontSize: "inherit"
     },
-    editor: theme?.overrides?.MUIRichTextEditor?.editor || {},
+    editor: theme?.overrides?.MUIRichTextEditor?.editor || {
+        "& li.public-DraftStyleDefault-orderedListItem": {
+            listStyleType: "none",
+            position: "relative",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem:before": {
+            left: "-34px",
+            position: "absolute",
+            textAlign: "right",
+            width: "30px",
+        },
+        "& li.public-DraftStyleDefault-depth0": {
+            marginLeft: 0,
+        },
+        "& li.public-DraftStyleDefault-depth0.public-DraftStyleDefault-reset": {
+            counterReset: "ol0",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth0:before": {
+            content: "counter(ol0) '.'",
+            counterIncrement: "ol0",
+        },
+        "& li.public-DraftStyleDefault-depth1": {
+            marginLeft: "16px",
+        },
+        "& li.public-DraftStyleDefault-depth1.public-DraftStyleDefault-reset": {
+            counterReset: "ol1",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth1:before": {
+            content: "counter(ol1) '.'",
+            counterIncrement: "ol1",
+        },
+        "& li.public-DraftStyleDefault-depth2": {
+            marginLeft: "32px",
+        },
+        "& li.public-DraftStyleDefault-depth2.public-DraftStyleDefault-reset": {
+            counterReset: "ol2",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth2:before": {
+            content: "counter(ol2) '.'",
+            counterIncrement: "ol2",
+        },
+        "& li.public-DraftStyleDefault-depth3": {
+            marginLeft: "48px",
+        },
+        "& li.public-DraftStyleDefault-depth3.public-DraftStyleDefault-reset": {
+            counterReset: "ol3",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth3:before": {
+            content: "counter(ol3) '.'",
+            counterIncrement: "ol3",
+        },
+        "& li.public-DraftStyleDefault-depth4": {
+            marginLeft: "64px",
+        },
+        "& li.public-DraftStyleDefault-depth4.public-DraftStyleDefault-reset": {
+            counterReset: "ol4",
+        },
+        "& li.public-DraftStyleDefault-orderedListItem.public-DraftStyleDefault-depth4:before": {
+            content: "counter(ol4) '.'",
+            counterIncrement: "ol4",
+        }
+    },
     editorContainer: theme?.overrides?.MUIRichTextEditor?.editorContainer || {
         margin: theme.spacing(1, 0, 0, 0),
         cursor: "text",
@@ -178,7 +259,8 @@ const styles = (theme: Theme & TMUIRichTextEditorStyles) => createStyles({
         position: "absolute",
         padding: "5px",
         zIndex: 10
-    }
+    },
+    autocomplete: theme?.overrides?.MUIRichTextEditor?.autocomplete || {},
 })
 
 const blockRenderMap = Immutable.Map({
@@ -201,8 +283,11 @@ const styleRenderMap: DraftStyleMap = {
 }
 
 const { hasCommandModifier } = KeyBindingUtil
-const autocompleteMinSearchCharCount = 2
-const lineHeight = 26
+const defaultAutocompleteMinSearchCharCount = 2
+const defaultAutocompleteMaxWidth = 200;
+const defaultAutocompleteMaxHeight = 200;
+
+const defaultLineHeight = 26;
 const defaultInlineToolbarControls = ["bold", "italic", "underline", "clear"]
 
 const findLinkEntities = (contentBlock: any, callback: any, contentState: any) => {
@@ -258,14 +343,17 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
     const [selectedIndex, setSelectedIndex] = useState<number>(0)
     const [editorState, setEditorState] = useState(() => useEditorState(props))
     const [focusMediaKey, setFocusMediaKey] = useState("")
+    const [showAutocompletePopup, setShowAutocompletePopup] = useState(false);
 
+    const lineHeight = props.lineHeight ?? defaultLineHeight;
+    const containerRef = useRef<HTMLDivElement>(null)
     const editorRef = useRef<Editor>(null)
     const editorId = props.id || "mui-rte"
     const toolbarPositionRef = useRef<TPosition | undefined>(undefined)
     const editorStateRef = useRef<EditorState | null>(editorState)
     const autocompleteRef = useRef<TAutocompleteStrategy | undefined>(undefined)
     const autocompleteSelectionStateRef = useRef<SelectionState | undefined>(undefined)
-    const autocompletePositionRef = useRef<TPosition | undefined>(undefined)
+    const autocompletePositionRef = useRef<AutocompleteTPosition | undefined>(undefined)
     const autocompleteLimit = props.autocomplete ? props.autocomplete.suggestLimit || 5 : 5
     const isFirstFocus = useRef(true)
     const customBlockMapRef = useRef<DraftBlockRenderMap | undefined>(undefined)
@@ -285,6 +373,17 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
         },
         save: () => {
             handleSave()
+        },
+        setLink: (urlKey: string, url: string) => {
+            confirmLink(urlKey, url);
+        },
+        isSelectionEmpty: () => {
+            const selection = editorStateRef.current?.getSelection();
+            if (null == selection) {
+                return true;
+            }
+            return selection.getStartKey() === selection.getEndKey()
+                && selection.getStartOffset() === selection.getEndOffset();
         },
         insertAtomicBlock: (name: string, data: any) => {
             handleInsertAtomicBlockSync(name, data)
@@ -318,15 +417,20 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
     }, [state.toolbarPosition])
 
     useEffect(() => {
-        if (searchTerm.length < autocompleteMinSearchCharCount) {
+        if (searchTerm.length === 0 || searchTerm.length < autocompleteMinSearchCharCount()) {
             setSelectedIndex(0)
         }
     }, [searchTerm])
 
+    const autocompleteMinSearchCharCount = () => autocompleteRef.current?.minSearchChars ?? defaultAutocompleteMinSearchCharCount
+    const canShowAutocompletePopup = () => autocompleteMinSearchCharCount() <= searchTerm.length + 1 && getAutocompleteItems().length > 0
+
     const clearSearch = () => {
         setSearchTerm("")
+        autocompleteRef.current = undefined
         autocompletePositionRef.current = undefined
         autocompleteSelectionStateRef.current = undefined
+        setShowAutocompletePopup(false)
     }
 
     const handleMouseUp = (event: any) => {
@@ -365,9 +469,9 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
             if (!selectionRect) {
                 return
             }
-            const position = {
+            const position: TPosition = {
                 top: editor.offsetTop - 48 + (selectionRect.top - editorRect.top),
-                left: editor.offsetLeft + (selectionRect.left - editorRect.left)
+                left: editor.offsetLeft + (selectionRect.left - editorRect.left),
             }
             setState({
                 ...state,
@@ -395,13 +499,27 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
         const { editorRect, selectionRect } = getEditorBounds(editor)
         const line = getLineNumber(editorState)
         const top = selectionRect ? selectionRect.top : editorRect.top + (lineHeight * line)
+        const bottom = selectionRect ? selectionRect.bottom : editorRect.top + (lineHeight * (1 + line))
         const left = selectionRect ? selectionRect.left : editorRect.left
-        const position = {
-            top: editor.offsetTop + (top - editorRect.top) + lineHeight,
-            left: editor.offsetLeft + (left - editorRect.left)
+        const width = autocompleteRef.current?.maxWidth ?? defaultAutocompleteMaxWidth;
+        const height = autocompleteRef.current?.maxHeight ?? defaultAutocompleteMaxHeight;
+        const containerRect = containerRef.current?.getBoundingClientRect() ?? editorRect;
+
+        const position: AutocompleteTPosition = {
+            top: 'unset',
+            left: 'unset',
+            bottom: 'unset',
+            right: 'unset',
+        };
+        if (top + height <= window.innerHeight) {
+            position.top = editor.offsetTop + (top - editorRect.top) + lineHeight;
+        } else {
+            position.bottom = containerRect.bottom - (bottom ?? 0) + lineHeight;
         }
-        if (!autocompleteSelectionStateRef.current) {
-            autocompleteSelectionStateRef.current = editorStateRef.current!.getSelection()
+        if (left + width < window.innerWidth) {
+            position.left = editor.offsetLeft + (left - editorRect.left);
+        } else {
+            position.right = 0;
         }
         autocompletePositionRef.current = position
     }
@@ -452,8 +570,13 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
             const newSelection = currentSelection.merge({
                 'focusOffset': offset
             })
-            if (autocompleteRef.current!.atomicBlockName) {
-                const name = autocompleteRef.current!.atomicBlockName
+
+            const autoCompleteStrategy = autocompleteRef.current!
+            if (autoCompleteStrategy.handleAutoComplete) {
+                const newState = autoCompleteStrategy.handleAutoComplete(editorState, newSelection as SelectionState, item.value)
+                handleChange(newState)
+            } else if (autoCompleteStrategy.atomicBlockName) {
+                const name = autoCompleteStrategy.atomicBlockName
                 insertAutocompleteSuggestionAsAtomicBlock(name, newSelection as SelectionState, item.value)
             } else {
                 insertAutocompleteSuggestionAsText(newSelection as SelectionState, item.value)
@@ -465,15 +588,19 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
     const handleAutocompleteClosed = () => {
         clearSearch()
         setSelectedIndex(0)
-        refocus()
+    }
+
+    const matchKey: (s: string, k: string) => boolean =
+        autocompleteRef.current?.matchAutocompleteKey ||
+        ((s, k) => k.includes(s))
+
+    const matchAutocompleteItem = (item: TAutocompleteItem): boolean => {
+        return item.keys.filter(key => matchKey(searchTerm, key)).length > 0
     }
 
     const getAutocompleteItems = (): TAutocompleteItem[] => {
-        if (searchTerm.length < autocompleteMinSearchCharCount) {
-            return []
-        }
         return autocompleteRef.current!.items
-            .filter(item => (item.keys.filter(key => key.includes(searchTerm)).length > 0))
+            .filter(item => matchAutocompleteItem(item))
             .splice(0, autocompleteLimit)
     }
 
@@ -481,19 +608,52 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
         setEditorState(state)
     }
 
-    const handleBeforeInput = (chars: string, editorState: EditorState): DraftHandleValue => {
-        if (chars === " " && searchTerm.length) {
-            clearSearch()
+    const handleBeforeInput = (chars: string): DraftHandleValue => {
+        if (chars === " " && autocompleteRef.current?.items?.length == 1) {
+            if (matchAutocompleteItem(autocompleteRef.current?.items[0])) {
+                handleAutocompleteSelected()
+                return "handled"
+            } else {
+                clearSearch();
+            }
         } else if (autocompleteSelectionStateRef.current) {
             setSearchTerm(searchTerm + chars)
-        } else {
+            updateAutocompletePopup();
+        } else if (isAfterWhitespace()) {
             const strategy = findAutocompleteStrategy(chars)
             if (strategy) {
                 autocompleteRef.current = strategy
-                updateAutocompletePosition()
+                autocompleteSelectionStateRef.current = editorStateRef.current!.getSelection()
+                setSearchTerm("")
+                updateAutocompletePopup();
             }
         }
         return isMaxLengthHandled(editorState, 1)
+    }
+    const updateAutocompletePopup = () => {
+        if (canShowAutocompletePopup()) {
+            if (!showAutocompletePopup) {
+                updateAutocompletePosition()
+            }
+            setShowAutocompletePopup(true);
+        } else {
+            setShowAutocompletePopup(false);
+        }
+    }
+    const isAfterWhitespace = () => {
+        const selectionState = editorStateRef.current?.getSelection();
+        if (!selectionState) {
+            return false;
+        }
+        const anchorKey = selectionState.getAnchorKey();
+        const currentContent = editorState.getCurrentContent();
+        const currentContentBlock = currentContent.getBlockForKey(anchorKey);
+        const end = selectionState.getEndOffset();
+        if (end == 0) {
+            return true;
+        }
+        const lastSymbol = currentContentBlock.getText().slice(end - 1, end);
+        return /\s/.test(lastSymbol);
     }
 
     const handleEditorFocus = () => {
@@ -627,6 +787,10 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
                 }
                 return "handled"
             }
+            if ("mui-save" === command) {
+                handleSave()
+                return "handled"
+            }
             if (props.keyCommands) {
                 const keyCommand = props.keyCommands.find(comm => comm.name === command)
                 if (keyCommand) {
@@ -661,6 +825,9 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
                             refocus()
                         }
                     }
+                }
+                if (control.onPopup) {
+                    control.onPopup(editorState, control.name, document.getElementById(id))
                 }
                 break
             }
@@ -712,7 +879,7 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
             confirmMedia(...args)
             return
         }
-        confirmLink(...args)
+        confirmLink(state.urlKey, args[0])
     }
 
     const handleToolbarClick = (style: string, type: string, id: string, inlineMode?: boolean) => {
@@ -759,6 +926,12 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
         return isGreaterThan(currentLength + nextLength, props.maxLength) ? "handled" : "not-handled"
     }
 
+    const handleOnTab = (ev: React.KeyboardEvent<{}>) => {
+        // draftjs doesn't work with max depth more then 4
+        let newEditorState = RichUtils.onTab(ev, editorState, props.listMaxDepth ?? 4)
+        handleChange(newEditorState);
+    }
+
     const toggleMouseUpListener = (addAfter = false) => {
         const editor: HTMLElement = (editorRef.current as any)?.editor
         if (!editor) {
@@ -775,8 +948,7 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
         setEditorState(RichUtils.toggleLink(editorState, selection, null))
     }
 
-    const confirmLink = (url?: string) => {
-        const { urlKey } = state
+    const confirmLink = (urlKey?: string, url?: string) => {
         if (!url) {
             if (urlKey) {
                 removeLink()
@@ -1021,6 +1193,11 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
             && keyBinding === "backspace"
             && searchTerm.length) {
             setSearchTerm(searchTerm.substr(0, searchTerm.length - 1))
+            if (canShowAutocompletePopup()) {
+                setShowAutocompletePopup(true);
+            } else {
+                setShowAutocompletePopup(false);
+            }
         } else if (!autocompletePositionRef.current &&
             (keyBinding === "backspace"
                 || keyBinding === "split-block")) {
@@ -1035,11 +1212,18 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
                 return comm.name
             }
         }
-        if (searchTerm) {
+        if (autocompleteRef.current) {
             const autocompleteEvent = getAutocompleteKeyEvent(e)
             if (autocompleteEvent) {
                 return autocompleteEvent
             }
+        }
+        if (props.saveOnEnter && "Enter" === e.key && !e.shiftKey && !e.ctrlKey && !e.altKey) {
+            return "mui-save"
+        }
+        if ("Tab" === e.key) {
+            handleOnTab(e);
+            return null;
         }
         const keyBinding = getDefaultKeyBinding(e)
         updateSearchTermForKeyBinding(keyBinding)
@@ -1072,14 +1256,18 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
 
     return (
         <div id={`${editorId}-root`} className={classes.root}>
-            <div id={`${editorId}-container`} className={classNames(classes.container, {
+            <div id={`${editorId}-container`} ref={containerRef} className={classNames(classes.container, {
                 [classes.inheritFontSize]: props.inheritFontSize
             })}>
-                {props.autocomplete && autocompletePositionRef.current ?
+                {props.autocomplete && showAutocompletePopup && autocompletePositionRef.current ?
                     <Autocomplete
+                        editorId={editorId}
+                        classes={{ autocomplete: classes.autocomplete }}
                         items={getAutocompleteItems()}
                         top={autocompletePositionRef.current!.top}
+                        bottom={autocompletePositionRef.current!.bottom}
                         left={autocompletePositionRef.current!.left}
+                        right={autocompletePositionRef.current!.right}
                         onClick={handleAutocompleteSelected}
                         selectedIndex={selectedIndex}
                     />
@@ -1097,6 +1285,7 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
                             customControls={customControls}
                             inlineMode={true}
                             isActive={true}
+                            localization={props.localization}
                         />
                     </Paper>
                     : null}
@@ -1111,10 +1300,11 @@ const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRic
                         disabled={!editable}
                         size={props.toolbarButtonSize}
                         isActive={focus}
+                        localization={props.localization}
                     />
                     : null}
                 {placeholder}
-                <div id={`${editorId}-editor`} className={classes.editor}>
+                <div id={`${editorId}-editor`} className={classes.editor} style={placeholder ? { display: "none" } : {}}>
                     <div id={`${editorId}-editor-container`} className={classNames(className, classes.editorContainer, {
                         [classes.editorReadOnly]: !editable,
                         [classes.error]: props.error

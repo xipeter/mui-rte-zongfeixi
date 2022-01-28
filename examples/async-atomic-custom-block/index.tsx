@@ -192,11 +192,13 @@ const AsyncAtomicCustomBlock: FunctionComponent = () => {
                 customControls={[
                     {
                         name: "my-card",
+                        label: "Card",
                         type: "atomic",
                         atomicComponent: MyCard
                     },
                     {
                         name: "add-card",
+                        label: "Add Card",
                         icon: <UpdateIcon />,
                         type: "callback",
                         onClick: (_editorState, _name, anchor) => {

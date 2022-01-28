@@ -30,6 +30,7 @@ export type TToolbarButtonSize = "small" | "medium"
 
 export type TToolbarComponentProps = {
     id: string,
+    label: string,
     onMouseDown: (e: React.MouseEvent) => void,
     active: boolean,
     disabled: boolean
@@ -38,6 +39,7 @@ export type TToolbarComponentProps = {
 export type TCustomControl = {
     id?: string
     name: string
+    label: string
     icon?: JSX.Element
     type: TControlType
     component?: FunctionComponent<TToolbarComponentProps>
@@ -45,6 +47,7 @@ export type TCustomControl = {
     blockWrapper?: React.ReactElement
     atomicComponent?: FunctionComponent
     onClick?: (editorState: EditorState, name: string, anchor: HTMLElement | null) => EditorState | void
+    onPopup?: (editorState: EditorState, name: string, anchor: HTMLElement | null) => void
 }
 
 type TStyleType = {
@@ -64,6 +67,7 @@ type TToolbarProps = {
     editorState: EditorState
     controls?: Array<TToolbarControl>
     customControls?: TCustomControl[]
+    localization?: (label: string) => string
     onClick: (style: string, type: string, id: string, inlineMode?: boolean) => void
     inlineMode?: boolean
     className?: string
@@ -167,7 +171,7 @@ const STYLE_TYPES: TStyleType[] = [
         type: "block"
     },
     {
-        label: 'Code Block',
+        label: 'Code',
         name: "code",
         style: 'code-block',
         icon: <CodeIcon />,
@@ -193,6 +197,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
     const [availableControls, setAvailableControls] = useState(props.controls ? [] : STYLE_TYPES)
     const { editorState } = props
     const id = props.inlineMode ? "-inline-toolbar" : "-toolbar"
+    const localization: (label: string) => string = props.localization ?? (l => l);
 
     useEffect(() => {
         if (!props.controls) {
@@ -212,7 +217,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
                     filteredControls.push({
                         id: customControl.id || (customControl.name + "Id"),
                         name: customControl.name,
-                        label: customControl.name,
+                        label: customControl.label,
                         style: customControl.name.toUpperCase(),
                         icon: customControl.icon,
                         component: customControl.component,
@@ -259,7 +264,7 @@ const Toolbar: FunctionComponent<TToolbarProps> = (props) => {
                         editorId={props.id}
                         key={`key-${style.label}`}
                         active={active}
-                        label={style.label}
+                        label={localization(style.label)}
                         onClick={action}
                         style={style.style}
                         type={style.type}

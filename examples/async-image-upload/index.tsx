@@ -180,6 +180,7 @@ const AsyncImageUpload: FunctionComponent = () => {
                 customControls={[
                     {
                         name: "upload-image",
+                        label: "Upload Image",
                         icon: <BackupIcon />,
                         type: "callback",
                         onClick: (_editorState, _name, anchor) => {

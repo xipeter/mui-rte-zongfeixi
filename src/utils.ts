@@ -8,6 +8,8 @@ import { TCustomControl } from './components/Toolbar'
 export type TPosition = {
     top: number
     left: number
+    bottom?: number
+    right?: number
 }
 
 export type TSelectionInfo = {
@@ -96,7 +98,9 @@ const getEditorBounds = (editor: HTMLElement) => {
     return {
         selectionRect: fakeClientRect ? {
             top: fakeClientRect?.top,
-            left: fakeClientRect?.left
+            left: fakeClientRect?.left,
+            bottom: fakeClientRect?.bottom,
+            right: fakeClientRect?.right,
         } as TPosition : null,
         editorRect: editor.getBoundingClientRect()
     }

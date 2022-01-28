@@ -16,6 +16,7 @@ const CustomInlineToolbar = () => {
             customControls={[
                 {
                     name: "my-style",
+                    label: "Style",
                     icon: <InvertColorsIcon />,
                     type: "inline",
                     inlineStyle: {

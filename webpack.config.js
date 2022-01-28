@@ -39,7 +39,7 @@ module.exports = {
         static: {
             directory: path.join(__dirname, "examples")
         },
-        port: 9001,
+        port: 9999,
         watchFiles: ["src/*"],
         compress: true,
         host: "0.0.0.0"
