@@ -1,9 +1,6 @@
-import React, { forwardRef, FunctionComponent } from 'react'
-import Paper from '@material-ui/core/Paper'
-import List from '@material-ui/core/List'
-import ListItem from '@material-ui/core/ListItem'
-import { createStyles, withStyles, WithStyles } from '@material-ui/core/styles'
-import classNames from 'classnames'
+import React, { forwardRef } from 'react'
+import { Paper, List, ListItem } from '@mui/material'
+import { createStyles, withStyles, WithStyles } from '@mui/styles'
 
 export type TAutocompleteItem = {
     keys: string[]
@@ -34,7 +31,7 @@ const styles = () => createStyles({
     }
 })
 
-const Autocomplete: React.ForwardRefRenderFunction<unknown, TAutocompleteProps> = (props, ref) => {
+const Autocomplete: React.ForwardRefRenderFunction<HTMLDivElement, TAutocompleteProps> = (props, ref) => {
     if (!props.items.length) {
         return null
     }

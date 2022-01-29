@@ -1,13 +1,14 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
+        "module": "CommonJS",
         "moduleResolution": "node",
-        "target": "es5",
+        "target": "ES5",
         "strict": true,
         "sourceMap": true,
         "esModuleInterop": true,
         "noImplicitReturns": true,
         "noUnusedParameters": true,
+        "noUnusedLocals": true,
         "outDir": "dist",
         "baseUrl": ".",
         "jsx": "react",

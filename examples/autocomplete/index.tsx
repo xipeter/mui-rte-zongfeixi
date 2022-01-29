@@ -1,10 +1,9 @@
 import React, { FunctionComponent } from 'react'
-import ListItemText from '@material-ui/core/ListItemText'
-import ListItemAvatar from '@material-ui/core/ListItemAvatar'
-import Avatar from '@material-ui/core/Avatar'
+import ListItemText from '@mui/material/ListItemText'
+import ListItemAvatar from '@mui/material/ListItemAvatar'
+import Avatar from '@mui/material/Avatar'
 import MUIRichTextEditor from '../../'
 import { TAutocompleteItem } from '../../src/components/Autocomplete'
-import { EditorState, Modifier, SelectionState } from 'draft-js'
 
 const save = (data: string) => {
     console.log(data)
@@ -91,32 +90,20 @@ const cities: TAutocompleteItem[] = [
 const staff = [
     {
         keys: ["all", "foo", "manager"],
-        value: { name: "Foo Bar", id: "id1" },
+        value: "Foo Bar",
         content: <Staff name="Foo Bar" job="Manager" color="tomato" />,
     },
     {
         keys: ["all", "bar", "support"],
-        value: { name: "Bar Foo", id: "id2" },
+        value: "Bar Foo",
         content: <Staff name="Bar Foo" job="Technical Support" color="orange" />,
     },
     {
         keys: ["all", "mui", "manager"],
-        value: { name: "Mui Rte", id: "id3" },
+        value: "Mui Rte",
         content: <Staff name="Mui Rte" job="Manager" color="dodgerblue" />,
     }
 ]
-
-const handleAutoComplete = (editorState: EditorState, selection: SelectionState, value: any): EditorState => {
-    const currentContentState = editorState.getCurrentContent()
-    const entityKey = currentContentState.createEntity("MENTION", 'IMMUTABLE', { value: value.id }).getLastCreatedEntityKey()
-    const contentState = Modifier.replaceText(editorState.getCurrentContent(),
-        selection,
-        value.name,
-        editorState.getCurrentInlineStyle(),
-        entityKey)
-    const newEditorState = EditorState.push(editorState, contentState, "insert-characters")
-    return newEditorState
-}
 
 const Autocomplete = () => {
     return (
@@ -131,15 +118,12 @@ const Autocomplete = () => {
                     },
                     {
                         items: cities,
-                        triggerChar: "/",
-                        minSearchChars: 0,
-                        matchAutocompleteKey: (s, k) => k.startsWith(s.toLowerCase()),
+                        triggerChar: "/"
                     },
                     {
                         items: staff,
                         triggerChar: "@",
-                        insertSpaceAfter: false,
-                        handleAutoComplete: handleAutoComplete
+                        insertSpaceAfter: false
                     }
                 ]
             }}

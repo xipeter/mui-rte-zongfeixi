@@ -1,8 +1,8 @@
-import { makeStyles } from '@material-ui/core'
-import Avatar from '@material-ui/core/Avatar'
-import Chip from '@material-ui/core/Chip'
-import { EditorState, Modifier, RichUtils, SelectionState } from 'draft-js'
 import React, { FunctionComponent } from 'react'
+import Avatar from '@mui/material/Avatar'
+import Chip from '@mui/material/Chip'
+import { makeStyles } from '@mui/styles'
+import { EditorState, Modifier, RichUtils, SelectionState } from 'draft-js'
 import MUIRichTextEditor from '../../'
 import { TAutocompleteItem } from '../../src/components/Autocomplete'
 

@@ -1,16 +1,17 @@
 import React, {
     FunctionComponent, useEffect, useState, useRef,
-    forwardRef, useImperativeHandle, RefForwardingComponent, SyntheticEvent
+    forwardRef, useImperativeHandle, ForwardRefRenderFunction
 } from 'react'
 import Immutable from 'immutable'
 import classNames from 'classnames'
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles'
-import Paper from '@material-ui/core/Paper'
+import { createStyles, withStyles, WithStyles, CSSProperties, CreateCSSProperties, PropsFunc } from '@mui/styles'
+import { Theme } from '@mui/material/styles'
+import { Paper } from '@mui/material'
 import {
     Editor, EditorState, convertFromRaw, RichUtils, AtomicBlockUtils,
     CompositeDecorator, convertToRaw, DefaultDraftBlockRenderMap, DraftEditorCommand,
     DraftHandleValue, DraftStyleMap, ContentBlock, DraftDecorator,
-    SelectionState, KeyBindingUtil, getDefaultKeyBinding, Modifier
+    SelectionState, KeyBindingUtil, getDefaultKeyBinding, Modifier, DraftBlockRenderMap
 } from 'draft-js'
 
 import Toolbar, { TToolbarControl, TCustomControl, TToolbarButtonSize } from './components/Toolbar'
@@ -20,7 +21,7 @@ import Blockquote from './components/Blockquote'
 import CodeBlock from './components/CodeBlock'
 import UrlPopover, { TAlignment, TUrlData, TMediaType } from './components/UrlPopover'
 import Autocomplete, { TAutocompleteItem } from './components/Autocomplete'
-import { getSelectionInfo, removeBlockFromMap, atomicBlockExists, isGreaterThan, clearInlineStyles, getEditorBounds, getLineNumber } from './utils'
+import { getSelectionInfo, removeBlockFromMap, atomicBlockExists, isGreaterThan, clearInlineStyles, getEditorBounds, getLineNumber, TPosition } from './utils'
 
 export type TDecorator = {
     component: FunctionComponent
@@ -120,36 +121,50 @@ type TStateOffset = {
     end: number
 }
 
-type TPosition = {
+type AutocompleteTPosition = {
     top: number | 'unset'
     bottom: number | 'unset'
     left: number | 'unset'
     right: number | 'unset'
 }
 
-type TCustomRenderers = {
-    style?: DraftStyleMap
-    block?: Immutable.Map<any, any>
+export interface TMUIRichTextEditorStyles {
+    overrides?: {
+        MUIRichTextEditor?: {
+            root?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            container?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            inheritFontSize?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            editor?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            editorContainer?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            editorReadOnly?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            error?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            hidePlaceholder?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            placeHolder?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            linkPopover?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            linkTextField?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            anchorLink?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            toolbar?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            inlineToolbar?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>,
+            autocomplete?: CSSProperties | CreateCSSProperties<{}> | PropsFunc<{}, CreateCSSProperties<{}>>
+        }
+    }
 }
 
-const styles = ({ spacing, typography, palette }: Theme) => createStyles({
-    root: {
-    },
-    autocomplete: {
-    },
-    container: {
-        margin: spacing(1, 0, 0, 0),
+const styles = (theme: Theme & TMUIRichTextEditorStyles) => createStyles({
+    root: theme?.overrides?.MUIRichTextEditor?.root || {},
+    container: theme?.overrides?.MUIRichTextEditor?.container || {
+        margin: theme.spacing(1, 0, 0, 0),
         position: "relative",
-        fontFamily: typography.body1.fontFamily,
-        fontSize: typography.body1.fontSize,
+        fontFamily: theme.typography.body1.fontFamily,
+        fontSize: theme.typography.body1.fontSize,
         '& figure': {
             margin: 0
         }
     },
-    inheritFontSize: {
+    inheritFontSize: theme?.overrides?.MUIRichTextEditor?.inheritFontSize || {
         fontSize: "inherit"
     },
-    editor: {
+    editor: theme?.overrides?.MUIRichTextEditor?.editor || {
         "& li.public-DraftStyleDefault-orderedListItem": {
             listStyleType: "none",
             position: "relative",
@@ -211,42 +226,41 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
             counterIncrement: "ol4",
         }
     },
-    editorContainer: {
-        margin: spacing(1, 0, 0, 0),
+    editorContainer: theme?.overrides?.MUIRichTextEditor?.editorContainer || {
+        margin: theme.spacing(1, 0, 0, 0),
         cursor: "text",
         width: "100%",
-        padding: spacing(0, 0, 1, 0)
+        padding: theme.spacing(0, 0, 1, 0)
     },
-    editorReadOnly: {
+    editorReadOnly: theme?.overrides?.MUIRichTextEditor?.editorReadOnly || {
         borderBottom: "none"
     },
-    error: {
+    error: theme?.overrides?.MUIRichTextEditor?.error || {
         borderBottom: "2px solid red"
     },
-    hidePlaceholder: {
+    hidePlaceholder: theme?.overrides?.MUIRichTextEditor?.hidePlaceholder || {
         display: "none"
     },
-    placeHolder: {
-        color: palette.grey[600],
+    placeHolder: theme?.overrides?.MUIRichTextEditor?.placeHolder || {
+        color: theme.palette.grey[600],
         position: "absolute",
         outline: "none"
     },
-    linkPopover: {
-        padding: spacing(2, 2, 2, 2)
+    linkPopover: theme?.overrides?.MUIRichTextEditor?.linkPopover || {
+        padding: theme.spacing(2, 2, 2, 2)
     },
-    linkTextField: {
+    linkTextField: theme?.overrides?.MUIRichTextEditor?.linkTextField || {
         width: "100%"
     },
-    anchorLink: {
-    },
-    toolbar: {
-    },
-    inlineToolbar: {
+    anchorLink: theme?.overrides?.MUIRichTextEditor?.anchorLink || {},
+    toolbar: theme?.overrides?.MUIRichTextEditor?.toolbar || {},
+    inlineToolbar: theme?.overrides?.MUIRichTextEditor?.inlineToolbar || {
         maxWidth: "180px",
         position: "absolute",
         padding: "5px",
         zIndex: 10
-    }
+    },
+    autocomplete: theme?.overrides?.MUIRichTextEditor?.autocomplete || {},
 })
 
 const blockRenderMap = Immutable.Map({
@@ -320,7 +334,7 @@ const useEditorState = (props: IMUIRichTextEditorProps) => {
         : EditorState.createEmpty(decorator)
 }
 
-const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichTextEditorProps> = (props, ref) => {
+const MUIRichTextEditor: ForwardRefRenderFunction<TMUIRichTextEditorRef, IMUIRichTextEditorProps> = (props, ref) => {
     const { classes, controls, customControls } = props
 
     const [state, setState] = useState<TMUIRichTextEditorState>({})
@@ -329,10 +343,6 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     const [selectedIndex, setSelectedIndex] = useState<number>(0)
     const [editorState, setEditorState] = useState(() => useEditorState(props))
     const [focusMediaKey, setFocusMediaKey] = useState("")
-    const [customRenderers, setCustomRenderers] = useState<TCustomRenderers>({
-        style: undefined,
-        block: undefined
-    })
     const [showAutocompletePopup, setShowAutocompletePopup] = useState(false);
 
     const lineHeight = props.lineHeight ?? defaultLineHeight;
@@ -343,9 +353,12 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     const editorStateRef = useRef<EditorState | null>(editorState)
     const autocompleteRef = useRef<TAutocompleteStrategy | undefined>(undefined)
     const autocompleteSelectionStateRef = useRef<SelectionState | undefined>(undefined)
-    const autocompletePositionRef = useRef<TPosition | undefined>(undefined)
+    const autocompletePositionRef = useRef<AutocompleteTPosition | undefined>(undefined)
     const autocompleteLimit = props.autocomplete ? props.autocomplete.suggestLimit || 5 : 5
     const isFirstFocus = useRef(true)
+    const customBlockMapRef = useRef<DraftBlockRenderMap | undefined>(undefined)
+    const customStyleMapRef = useRef<DraftStyleMap | undefined>(undefined)
+    const isFocusedWithMouse = useRef(false)
     const selectionRef = useRef<TStateOffset>({
         start: 0,
         end: 0
@@ -385,31 +398,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
 
     useEffect(() => {
         const editorState = useEditorState(props)
-        const customBlockMap: any = {}
-        const customStyleMap = JSON.parse(JSON.stringify(styleRenderMap))
-        if (props.customControls) {
-            props.customControls.forEach(control => {
-                if (control.type === "inline" && control.inlineStyle) {
-                    customStyleMap[control.name.toUpperCase()] = control.inlineStyle
-                }
-                else if (control.type === "block" && control.blockWrapper) {
-                    customBlockMap[control.name.toUpperCase()] = {
-                        element: "div",
-                        wrapper: control.blockWrapper
-                    }
-                }
-            })
-        }
-        setCustomRenderers({
-            style: customStyleMap,
-            block: DefaultDraftBlockRenderMap.merge(blockRenderMap, Immutable.Map(customBlockMap))
-        })
-        const nextEditorState = EditorState.forceSelection(editorState, editorState.getSelection())
-        if (props.readOnly === true) {
-            setEditorState(nextEditorState)
-        } else {
-            setEditorState(EditorState.moveFocusToEnd(nextEditorState))
-        }
+        setEditorState(editorState)
         toggleMouseUpListener(true)
         return () => {
             toggleMouseUpListener()
@@ -472,7 +461,10 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                 end: selection.getEndOffset()
             }
 
-            const editor: HTMLElement = (editorRef.current as any).editor
+            const editor: HTMLElement = (editorRef.current as any)?.editor
+            if (!editor) {
+                return
+            }
             const { editorRect, selectionRect } = getEditorBounds(editor)
             if (!selectionRect) {
                 return
@@ -480,8 +472,6 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
             const position: TPosition = {
                 top: editor.offsetTop - 48 + (selectionRect.top - editorRect.top),
                 left: editor.offsetLeft + (selectionRect.left - editorRect.left),
-                bottom: "unset",
-                right: "unset",
             }
             setState({
                 ...state,
@@ -502,7 +492,10 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const updateAutocompletePosition = () => {
-        const editor: HTMLElement = (editorRef.current as any).editor
+        const editor: HTMLElement = (editorRef.current as any)?.editor
+        if (!editor) {
+            return
+        }
         const { editorRect, selectionRect } = getEditorBounds(editor)
         const line = getLineNumber(editorState)
         const top = selectionRect ? selectionRect.top : editorRect.top + (lineHeight * line)
@@ -512,7 +505,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         const height = autocompleteRef.current?.maxHeight ?? defaultAutocompleteMaxHeight;
         const containerRect = containerRef.current?.getBoundingClientRect() ?? editorRect;
 
-        const position: TPosition = {
+        const position: AutocompleteTPosition = {
             top: 'unset',
             left: 'unset',
             bottom: 'unset',
@@ -521,7 +514,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         if (top + height <= window.innerHeight) {
             position.top = editor.offsetTop + (top - editorRect.top) + lineHeight;
         } else {
-            position.bottom = containerRect.bottom - bottom + lineHeight;
+            position.bottom = containerRect.bottom - (bottom ?? 0) + lineHeight;
         }
         if (left + width < window.innerWidth) {
             position.left = editor.offsetLeft + (left - editorRect.left);
@@ -663,16 +656,10 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         return /\s/.test(lastSymbol);
     }
 
-    const isSyntheticEventTriggeredByTab = (event: SyntheticEvent): boolean => {
-        if (!event.hasOwnProperty("relatedTarget") || (event as any).relatedTarget == null) {
-            return false
-        }
-        return true
-    }
-
-    const handleEditorFocus = (event: SyntheticEvent) => {
+    const handleEditorFocus = () => {
         handleFocus()
-        if (!isSyntheticEventTriggeredByTab(event)) {
+        if (isFocusedWithMouse.current === true) {
+            isFocusedWithMouse.current = false
             return
         }
         const nextEditorState = EditorState.forceSelection(editorState, editorState.getSelection())
@@ -701,6 +688,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const handleBlur = () => {
+        isFocusedWithMouse.current = false
         setFocus(false)
         if (props.onBlur) {
             props.onBlur()
@@ -714,8 +702,15 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         }
     }
 
+    const handleMouseDown = () => {
+        isFocusedWithMouse.current = true
+    }
+
     const handleClearFormat = () => {
-        const withoutStyles = clearInlineStyles(editorState, customRenderers.style)
+        if (customStyleMapRef.current === undefined) {
+            return
+        }
+        const withoutStyles = clearInlineStyles(editorState, customStyleMapRef.current)
         const selectionInfo = getSelectionInfo(editorState)
         const newEditorState = EditorState.push(editorState, withoutStyles, 'change-inline-style')
         setEditorState(RichUtils.toggleBlockType(newEditorState, selectionInfo.blockType))
@@ -938,7 +933,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const toggleMouseUpListener = (addAfter = false) => {
-        const editor: HTMLElement = (editorRef.current as any).editor
+        const editor: HTMLElement = (editorRef.current as any)?.editor
         if (!editor) {
             return
         }
@@ -1073,6 +1068,41 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         handlePromptForMedia(false, newEditorState)
     }
 
+    const getStyleMap = (): DraftStyleMap => {
+        if (customStyleMapRef.current === undefined) {
+            setupStyleMap()
+        }
+        return customStyleMapRef.current!
+    }
+
+    const setupStyleMap = () => {
+        const customStyleMap = JSON.parse(JSON.stringify(styleRenderMap))
+        props.customControls?.filter(control => control.type === "inline" && control.inlineStyle)
+            .forEach(control => {
+                customStyleMap[control.name.toUpperCase()] = control.inlineStyle
+            })
+        customStyleMapRef.current = customStyleMap
+    }
+
+    const getBlockMap = (): DraftBlockRenderMap => {
+        if (customBlockMapRef.current === undefined) {
+            setupBlockMap()
+        }
+        return customBlockMapRef.current!
+    }
+
+    const setupBlockMap = () => {
+        const customBlockMap: any = {}
+        props.customControls?.filter(control => control.type === "block" && control.blockWrapper)
+            .forEach(control => {
+                customBlockMap[control.name.toUpperCase()] = {
+                    element: "div",
+                    wrapper: control.blockWrapper
+                }
+            })
+        customBlockMapRef.current = DefaultDraftBlockRenderMap.merge(blockRenderMap, Immutable.Map(customBlockMap))
+    }
+
     const blockRenderer = (contentBlock: ContentBlock) => {
         const blockType = contentBlock.getType()
         if (blockType === 'atomic') {
@@ -1092,18 +1122,26 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                     }
                 } else {
                     const block = atomicBlockExists(type.toLowerCase(), props.customControls)
-                    if (!block) {
-                        return null
-                    }
-                    return {
-                        component: block.atomicComponent,
-                        editable: false,
-                        props: contentState.getEntity(contentBlock.getEntityAt(0)).getData()
+                    if (block) {
+                        return {
+                            component: block.atomicComponent,
+                            editable: false,
+                            props: contentState.getEntity(contentBlock.getEntityAt(0)).getData()
+                        }
                     }
                 }
             }
         }
         return null
+    }
+
+    const styleRenderer = (style: any): React.CSSProperties => {
+        const customStyleMap = getStyleMap()
+        const styleNames = style.toJS()
+        return styleNames.reduce((styles: any, styleName: string) => {
+            styles = customStyleMap[styleName]
+            return styles
+        }, {})
     }
 
     const insertAtomicBlock = (editorState: EditorState, type: string, data: any, options?: any) => {
@@ -1246,6 +1284,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                             controls={inlineToolbarControls}
                             customControls={customControls}
                             inlineMode={true}
+                            isActive={true}
                             localization={props.localization}
                         />
                     </Paper>
@@ -1260,6 +1299,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                         className={classes.toolbar}
                         disabled={!editable}
                         size={props.toolbarButtonSize}
+                        isActive={focus}
                         localization={props.localization}
                     />
                     : null}
@@ -1268,11 +1308,11 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                     <div id={`${editorId}-editor-container`} className={classNames(className, classes.editorContainer, {
                         [classes.editorReadOnly]: !editable,
                         [classes.error]: props.error
-                    })} onBlur={handleBlur}>
+                    })} onMouseDown={handleMouseDown} onBlur={handleBlur}>
                         <Editor
-                            customStyleMap={customRenderers.style}
-                            blockRenderMap={customRenderers.block}
+                            blockRenderMap={getBlockMap()}
                             blockRendererFn={blockRenderer}
+                            customStyleFn={styleRenderer}
                             editorState={editorState}
                             onChange={handleChange}
                             onFocus={handleEditorFocus}
