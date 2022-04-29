@@ -1,26 +1,27 @@
-import React, {
-    FunctionComponent, useEffect, useState, useRef,
-    forwardRef, useImperativeHandle, RefForwardingComponent, SyntheticEvent
-} from 'react'
-import Immutable from 'immutable'
-import classNames from 'classnames'
-import { createStyles, withStyles, WithStyles, Theme } from '@material-ui/core/styles'
+import Editor from '@draft-js-plugins/editor'
+import createLinkifyPlugin from '@draft-js-plugins/linkify'
 import Paper from '@material-ui/core/Paper'
+import { createStyles, Theme, withStyles, WithStyles } from '@material-ui/core/styles'
+import classNames from 'classnames'
 import {
-    Editor, EditorState, convertFromRaw, RichUtils, AtomicBlockUtils,
-    CompositeDecorator, convertToRaw, DefaultDraftBlockRenderMap, DraftEditorCommand,
-    DraftHandleValue, DraftStyleMap, ContentBlock, DraftDecorator,
-    SelectionState, KeyBindingUtil, getDefaultKeyBinding, Modifier
+    AtomicBlockUtils,
+    CompositeDecorator, ContentBlock, convertFromRaw, convertToRaw, DefaultDraftBlockRenderMap, DraftDecorator, DraftEditorCommand,
+    DraftHandleValue, DraftStyleMap, EditorState, getDefaultKeyBinding, KeyBindingUtil, Modifier, RichUtils, SelectionState
 } from 'draft-js'
-
-import Toolbar, { TToolbarControl, TCustomControl, TToolbarButtonSize } from './components/Toolbar'
-import Link from './components/Link'
-import Media from './components/Media'
+import Immutable from 'immutable'
+import linkifyIt from 'linkify-it'
+import _ from 'lodash'
+import React, {
+    forwardRef, FunctionComponent, RefForwardingComponent, SyntheticEvent, useEffect, useImperativeHandle, useRef, useState
+} from 'react'
+import Autocomplete, { TAutocompleteItem } from './components/Autocomplete'
 import Blockquote from './components/Blockquote'
 import CodeBlock from './components/CodeBlock'
-import UrlPopover, { TAlignment, TUrlData, TMediaType } from './components/UrlPopover'
-import Autocomplete, { TAutocompleteItem } from './components/Autocomplete'
-import { getSelectionInfo, removeBlockFromMap, atomicBlockExists, isGreaterThan, clearInlineStyles, getEditorBounds, getLineNumber } from './utils'
+import Link from './components/Link'
+import Media from './components/Media'
+import Toolbar, { TCustomControl, TToolbarButtonSize, TToolbarControl } from './components/Toolbar'
+import UrlPopover, { TAlignment, TMediaType, TUrlData } from './components/UrlPopover'
+import { atomicBlockExists, clearInlineStyles, getEditorBounds, getLineNumber, getSelectionInfo, isGreaterThan, removeBlockFromMap } from './utils'
 
 export type TDecorator = {
     component: FunctionComponent
@@ -299,12 +300,13 @@ const findDecoWithRegex = (regex: RegExp, contentBlock: any, callback: any) => {
 }
 
 const useEditorState = (props: IMUIRichTextEditorProps) => {
-    const decorators: DraftDecorator[] = [
-        {
-            strategy: findLinkEntities,
-            component: Link,
-        }
-    ]
+    const linkifyPlugin = createLinkifyPlugin({});
+    const decorators = linkifyPlugin.decorators as DraftDecorator[];
+    decorators.push({
+        strategy: findLinkEntities,
+        component: Link,
+    });
+
     if (props.decorators) {
         props.decorators.forEach(deco => decorators.push({
             strategy: (contentBlock: any, callback: any) => {
@@ -472,7 +474,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
                 end: selection.getEndOffset()
             }
 
-            const editor: HTMLElement = (editorRef.current as any).editor
+            const editor: HTMLElement = (editorRef.current as any).editor.editor
             const { editorRect, selectionRect } = getEditorBounds(editor)
             if (!selectionRect) {
                 return
@@ -502,7 +504,7 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const updateAutocompletePosition = () => {
-        const editor: HTMLElement = (editorRef.current as any).editor
+        const editor: HTMLElement = (editorRef.current as any).editor.editor
         const { editorRect, selectionRect } = getEditorBounds(editor)
         const line = getLineNumber(editorState)
         const top = selectionRect ? selectionRect.top : editorRect.top + (lineHeight * line)
@@ -722,9 +724,8 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const handleSave = () => {
-        if (props.onSave) {
-            props.onSave(JSON.stringify(convertToRaw(editorState.getCurrentContent())))
-        }
+        const editorState = handleUrlTransform();
+        props.onSave?.(JSON.stringify(convertToRaw(editorState.getCurrentContent())));
     }
 
     const handleInsertAtomicBlockSync = (name: string, data: any) => {
@@ -918,6 +919,59 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
         }
     }
 
+    /** transform url to link */
+    const handleUrlTransform = (): EditorState => {
+        const linkify = linkifyIt();
+        let finalEditorState = editorState;
+
+        editorState.getCurrentContent().getBlockMap().forEach(block => {
+            const matches = linkify.match(block?.get('text'));
+            const blockKey = block?.getKey();
+            const currentConetent = editorState.getCurrentContent();
+
+            if (typeof matches !== 'undefined' && matches !== null) {
+                for (let i = 0; i < matches.length; i++) {
+                    const matchObject = matches[i];
+                    const start = matchObject.index;
+                    const entityKeyStart = block?.getEntityAt(start);
+
+                    if (entityKeyStart) {
+                        continue;
+                    }
+
+                    const link = _.trimEnd(matchObject.url, '/');
+
+                    const data = {
+                        url: link,
+                        className: classes.anchorLink
+                    }
+                    currentConetent.createEntity('LINK', 'MUTABLE', data)
+                    const entityKey = currentConetent.getLastCreatedEntityKey()
+                    const selection = new SelectionState({
+                        anchorKey: blockKey,
+                        anchorOffset: start,
+                        focusKey: blockKey,
+                        focusOffset: start + matchObject.lastIndex - matchObject.index,
+                    });
+
+                    const textWithEntity = Modifier.replaceText(
+                        currentConetent,
+                        selection,
+                        link,
+                        editorState.getCurrentInlineStyle(),
+                        entityKey
+                    )
+
+                    finalEditorState = EditorState.createWithContent(textWithEntity, undefined);
+
+                    setEditorState(finalEditorState);
+                }
+            }
+        });
+
+        return finalEditorState;
+    }
+
     const handlePastedText = (text: string, _html: string | undefined, editorState: EditorState): DraftHandleValue => {
         return isMaxLengthHandled(editorState, text.length)
     }
@@ -938,7 +992,8 @@ const MUIRichTextEditor: RefForwardingComponent<TMUIRichTextEditorRef, IMUIRichT
     }
 
     const toggleMouseUpListener = (addAfter = false) => {
-        const editor: HTMLElement = (editorRef.current as any).editor
+        const editor: HTMLElement = (editorRef.current as any).editor.editor
+
         if (!editor) {
             return
         }
